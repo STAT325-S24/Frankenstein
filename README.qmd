@@ -1,6 +1,6 @@
 ---
-title: "XX DATA PACKAGE"
-author: "YOUR NAME"
+title: "Frankenstein"
+author: "Justin Papagelis"
 date: "2024-01-01"
 date-format: iso
 format: gfm
@@ -11,28 +11,41 @@ editor: source
 #| label: setup
 #| include: false
 library(tidyverse)
-library(DiscGolf)
-```
-
-This file describes the XX package.
-
-The package is interesting because XX, YY, and ZZ.
-
-The XX package can be installed by running:
+library(mosaic)
 
 ```
-devtools::install_github("nicholasjhorton/DiscGolf")
-library(DiscGolf)
+
+This file describes the Frankenstein package.
+
+The package is interesting because it reads in Frankenstein by Mary Shelley to a dataset.
+
+The Frankenstein package can be installed by running:
+
+```
+devtools::install_github("STAT325-S24/Frankenstein")
+library(Frankenstein)
 ```
 
 ```{r}
-glimpse(DiscGolf)
+glimpse(Frankenstein)
 ```
 
 Here are some sample analyses:
 
-XX
+```{r}
+frankenstein_afinn <- Frankenstein |>
+   drop_na() |>
+   unnest_tokens(word, text) |>
+   anti_join(get_stopwords(), by = "word") |>
+   inner_join(get_sentiments("afinn")) |>
+   filter(section_type != "letter")
+glimpse(frankenstein_afinn)
+```
+```{r}
+frankenstein_plot <- frankenstein_afinn |>
+     group_by(section) |>
+     summarize(sentiment = sum(value))
+ggplot(frankenstein_plot, aes(x = section, y = sentiment)) + geom_point() + geom_smooth() +
+  labs(title = "AFINN Sentiment by Chapter of Frankenstein", x = "Chapter", y = "Sentiment")
+```
 
-YY
-
-ZZ

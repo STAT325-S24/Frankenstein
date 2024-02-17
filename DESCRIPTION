@@ -1,10 +1,10 @@
-Package: foo
-Title: What the Package Does (One Line, Title Case)
+Package: Frankenstein
+Title: Creates A Frakenstein Dataset
 Version: 0.0.0.9000
 Authors@R: 
-    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"),
+    person("Justin", "Papagelis", , "jpapagelis24@amherst.edu", role = c("aut", "cre"),
            comment = c(ORCID = "YOUR-ORCID-ID"))
-Description: What the package does (one paragraph).
+Description: This package uses the `gutenbergr` package to get the text of Frankenstein and then splits the lines of text up by section.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
