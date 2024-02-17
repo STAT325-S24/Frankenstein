@@ -26,13 +26,13 @@ devtools::install_github("STAT325-S24/Frankenstein")
 library(Frankenstein)
 ```
 
-```{r}
+```{r eval = FALSE}
 glimpse(Frankenstein)
 ```
 
 Here are some sample analyses:
 
-```{r}
+```{r eval = FALSE}
 frankenstein_afinn <- Frankenstein |>
    drop_na() |>
    unnest_tokens(word, text) |>
@@ -41,7 +41,7 @@ frankenstein_afinn <- Frankenstein |>
    filter(section_type != "letter")
 glimpse(frankenstein_afinn)
 ```
-```{r}
+```{r eval = FALSE}
 frankenstein_plot <- frankenstein_afinn |>
      group_by(section) |>
      summarize(sentiment = sum(value))
