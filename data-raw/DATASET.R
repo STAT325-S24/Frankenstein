@@ -15,8 +15,8 @@ Frankenstein <- frankenstein_raw |>
 Frankenstein$section_type <- NA
 Frankenstein$section <- NA
 num_lines <- nrow(Frankenstein)
-curr_section <- NA
-type <- NA
+curr_section <- 0
+type <- "misc"
 for (i in 1:num_lines) {
   if (str_detect(Frankenstein$text[i], "^Letter")) {
     curr_section <- as.numeric(str_replace_all(Frankenstein$text[i], "\\D", ""))
