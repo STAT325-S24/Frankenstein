@@ -1,10 +1,10 @@
 Package: Frankenstein
-Title: Creates A Frakenstein Dataset
-Version: 0.0.0.9000
+Title: Creates A Frankenstein Dataset
+Version: 0.0.1.0
 Authors@R: 
     person("Justin", "Papagelis", , "jpapagelis24@amherst.edu", role = c("aut", "cre"),
            comment = c(ORCID = "YOUR-ORCID-ID"))
-Description: This package uses the `gutenbergr` package to get the text of Frankenstein and then splits the lines of text up by section.
+Description: This package uses the `gutenbergr` package to get the text of the book Frankenstein and then splits the lines of text up by section to facilitate text analysis.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
