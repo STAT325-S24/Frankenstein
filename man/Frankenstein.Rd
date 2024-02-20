@@ -3,16 +3,16 @@
 \docType{data}
 \name{Frankenstein}
 \alias{Frankenstein}
-\title{My data}
+\title{Frankenstein Data Frame}
 \format{
 \subsection{\code{Frankenstein}}{
 
 A data frame with 7357 rows and 4 columns:
 \describe{
 \item{line}{line number}
-\item{text}{the text}
+\item{text}{the line of text}
 \item{section}{the section number}
-\item{section_type}{the type of section: letter or chapter}
+\item{section_type}{the type of section: misc, letter or chapter}
 ...
 }
 }
@@ -24,7 +24,7 @@ A data frame with 7357 rows and 4 columns:
 Frankenstein
 }
 \description{
-This is more descriptive text about my data.
-Even more info is provided here ...
+This data frame provides the full text of Frankenstein by Mary Shelley.
+The data frame provides information about each line of text including the following: The line that the text is on in the book. The type of section: 1) "misc" represents the text before the book begins including the table of contents, 2) "letter" represents that the section is one of the four written letters, and 3) "chapter" represents one of the 24 chapters in the novel. The section number corresponding to letter number or chapter number. A "0" depicts an unnumbered section.
 }
 \keyword{datasets}
