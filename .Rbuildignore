@@ -2,9 +2,7 @@
 ^\.Rproj\.user$
 ^LICENSE\.md$
 ^data-raw$
-<<<<<<< Updated upstream
 resources
 README.qmd
-=======
 ^.*\.Rproj$
->>>>>>> Stashed changes
+vignette
