@@ -1,0 +1,45 @@
+
+```{r}
+library(Frankenstein)
+library(dplyr)
+library(tidyr)
+library(tidytext)
+library(topicmodels)
+library(ggplot2)
+
+# Wrangle the data
+frankenstein_LDA <- Frankenstein |>
+  filter(section != 0) |>
+  filter(section_type != "letter") |>
+  unnest_tokens(word, text) |>
+  anti_join(stop_words)
+
+# Create the document-word matrix
+dtm <- frankenstein_LDA |>
+  count(section, word) |>
+  cast_dtm(section, word, n)
+
+# Perform LDA analysis
+lda_model <- LDA(dtm, k = 4) # Adjust 'k' based on the desired number of topics
+
+
+topics <- tidy(lda_model, matrix = "beta")
+topics
+
+
+top_terms <- topics |>
+  group_by(topic) |>
+  slice_max(beta, n = 10) |>
+  ungroup() |>
+  arrange(topic, -beta)
+
+glimpse(top_terms)
+
+# Top term models 
+top_terms |>
+  mutate(term = reorder_within(term, beta, topic)) |>
+  ggplot(aes(beta, term, fill = factor(topic))) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~ topic, scales = "free") +
+  scale_y_reordered()
+```
