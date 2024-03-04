@@ -1,5 +1,15 @@
 
-```{r}
+---
+title: "STAT325: LDA Analysis of Frankenstein"
+author: "Justin Papagelis (jpapagelis24@amherst.edu)"
+date: "2024-03-04"
+date-format: iso
+format: pdf
+editor: source
+---
+
+
+```{r, message = FALSE}
 library(Frankenstein)
 library(dplyr)
 library(tidyr)
@@ -7,39 +17,126 @@ library(tidytext)
 library(topicmodels)
 library(ggplot2)
 
-# Wrangle the data
-frankenstein_LDA <- Frankenstein |>
+
+
+other_stop_words <- tibble(  # get rid of common numbers
+     word = paste(c(0:24, "Chapter")))
+
+
+section_names <- c("letter 1", "letter 2", "letter 3", "letter 4", "chapter 1", 
+              "chapter 2", "chapter 3", "chapter 4", "chapter 5", "chapter 6", 
+              "chapter 7", "chapter 8", "chapter 9", "chapter 10", "chapter 11", 
+              "chapter 12", "chapter 13", "chapter 14", "chapter 15", 
+              "chapter 16", "chapter 17", "chapter 18", "chapter 19", 
+              "chapter 20", "chapter 21", "chapter 22", "chapter 23",
+              "chapter 24")
+
+# Clean and tokenize novel
+Frankenstein_LDA <- Frankenstein |>
   filter(section != 0) |>
-  filter(section_type != "letter") |>
+  mutate(section_label = paste(section_type,section)) |>
+  select(-section,-section_type) |>
   unnest_tokens(word, text) |>
-  anti_join(stop_words)
+  anti_join(stop_words) |>
+  anti_join(other_stop_words) |>
+  mutate(section_label = factor(section_label, levels = section_names))
+
+  
 
 # Create the document-word matrix
-dtm <- frankenstein_LDA |>
-  count(section, word) |>
-  cast_dtm(section, word, n)
+dtm <- Frankenstein_LDA |>
+  count(section_label, word) |>
+  cast_dtm(section_label, word, n)
 
-# Perform LDA analysis
-lda_model <- LDA(dtm, k = 4) # Adjust 'k' based on the desired number of topics
-
-
-topics <- tidy(lda_model, matrix = "beta")
-topics
+# Create LDA model using value of k and seed
+lda_model <- LDA(dtm, k = 8, control = list(seed = 1)) 
 
 
-top_terms <- topics |>
+
+```
+
+
+
+
+
+
+```{r, fig.width = 14, fig.height = 10}
+
+topics_gamma <- tidy(lda_model, matrix = "gamma") |>
+  mutate(document = factor(document, levels = section_names))
+
+
+ggplot(topics_gamma, aes(x = document, y = gamma, fill = factor(topic))) +
+  geom_bar(stat ="identity") +
+  facet_wrap(~ topic, scales = "free") +
+  theme_minimal() +
+  labs(x = "Section", y = "Topic Proportion", fill = "Topic", 
+       title = "Topic Distribution Across Frankenstein") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+
+```{r}
+
+topics_beta <- tidy(lda_model, matrix = "beta")
+topics_beta
+
+
+top_terms <- topics_beta |>
   group_by(topic) |>
-  slice_max(beta, n = 10) |>
+  slice_max(beta, n = 5) |>
   ungroup() |>
   arrange(topic, -beta)
-
-glimpse(top_terms)
 
 # Top term models 
 top_terms |>
   mutate(term = reorder_within(term, beta, topic)) |>
   ggplot(aes(beta, term, fill = factor(topic))) +
+  theme_minimal() +
   geom_col(show.legend = FALSE) +
   facet_wrap(~ topic, scales = "free") +
-  scale_y_reordered()
+  scale_y_reordered() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
 ```
+
+```{r, warning = FALSE, fig.width = 14, fig.height = 10}
+
+# Extract the top n high beta value words
+high_prob_words <- tidy(lda_model, matrix = "beta") |>
+  group_by(topic) |>
+  top_n(30, beta) |> 
+  ungroup()
+
+frankenstein_terms <- Frankenstein_LDA |>
+  rename(term = word)
+
+count_words <- frankenstein_terms |>
+  semi_join(high_prob_words, by = "term") |>
+  count(section_label, term) 
+
+final_count <- count_words |>
+  left_join(high_prob_words, by = "term") |>
+  select(section_label, term, topic, n) |>
+  group_by(section_label, topic) |>
+  summarize(total_words = sum(n), by = "section_label")
+
+
+ggplot(final_count, aes(x = section_label, y = total_words, fill = factor(topic))) +
+  geom_bar(stat = "identity") +
+  theme_minimal() +
+  facet_wrap(~ topic, scales = "free") +
+  labs(x = "Section", y = "Count of High-Probability Words", fill = "Topic",
+       title = "High Beta Value Words by Topic") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+
+
+
+
+
+
