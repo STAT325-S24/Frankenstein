@@ -1,4 +1,3 @@
-
 ---
 title: "STAT325: LDA Analysis of Frankenstein"
 author: "Justin Papagelis (jpapagelis24@amherst.edu)"
@@ -8,6 +7,21 @@ format: pdf
 editor: source
 ---
 
+In Frankenstein, by Mary Shelley, there are three different narrators that appear within the novel: Captain Robert Walton, Victor Frankenstein, and The Monster. The novel is told using a framing device which is basically a story within a story within a story. More specifically, the narrators for each section are as follows:
+
+-   Walton: *Letters 1-4*
+
+-   Frankenstein: *Chapters 1-10*
+
+-   The Creature: *Chapters 11-16*
+
+-   Frankenstein: *Chapters 17-24.5*
+
+-   Walton: *Rest of Chapter 24*
+
+For this part of my analysis, I use Latent Dirichlet allocation (LDA) which is a method of topic modelling to try and see if there is evidence of the framing device within the novel. In other words, I would like to see if LDA can detect the parts of the story that are written by the same narrator.
+
+To begin, the novel is pre-processed to remove common stop words, numbers, and other miscellaneous words. To create a unique label for each chapter, I combined the section and the section type as well as removed "section 0" which was the table of contents. Then, I created the document-word matrix and an LDA model using a value of `k=12` which means that the LDA model will isolate 12 topics.
 
 ```{r, message = FALSE}
 library(Frankenstein)
@@ -17,11 +31,9 @@ library(tidytext)
 library(topicmodels)
 library(ggplot2)
 
-
-
-other_stop_words <- tibble(  # get rid of common numbers
-     word = paste(c(0:24, "Chapter")))
-
+# Pre-processing
+other_stop_words <- tibble(  
+     word = paste(c(0:24, "Chapter", "11th", "_to")))
 
 section_names <- c("letter 1", "letter 2", "letter 3", "letter 4", "chapter 1", 
               "chapter 2", "chapter 3", "chapter 4", "chapter 5", "chapter 6", 
@@ -41,102 +53,107 @@ Frankenstein_LDA <- Frankenstein |>
   anti_join(other_stop_words) |>
   mutate(section_label = factor(section_label, levels = section_names))
 
-  
-
 # Create the document-word matrix
 dtm <- Frankenstein_LDA |>
   count(section_label, word) |>
   cast_dtm(section_label, word, n)
 
 # Create LDA model using value of k and seed
-lda_model <- LDA(dtm, k = 8, control = list(seed = 1)) 
-
-
-
+lda_model <- LDA(dtm, k = 12, control = list(seed = 1)) 
 ```
 
+First, I looked at the per-topic-per-word probabilities to extract the top words that are used in each of the topics. Then I created a model to show the most common words in each of the topics.
 
+```{r,  fig.width = 8, fig.height = 12}
 
-
-
-
-```{r, fig.width = 14, fig.height = 10}
-
-topics_gamma <- tidy(lda_model, matrix = "gamma") |>
-  mutate(document = factor(document, levels = section_names))
-
-
-ggplot(topics_gamma, aes(x = document, y = gamma, fill = factor(topic))) +
-  geom_bar(stat ="identity") +
-  facet_wrap(~ topic, scales = "free") +
-  theme_minimal() +
-  labs(x = "Section", y = "Topic Proportion", fill = "Topic", 
-       title = "Topic Distribution Across Frankenstein") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
-```
-
-
-```{r}
-
+# Per-topic-per-word probabilities
 topics_beta <- tidy(lda_model, matrix = "beta")
-topics_beta
 
-
+# Get the top terms
 top_terms <- topics_beta |>
   group_by(topic) |>
   slice_max(beta, n = 5) |>
   ungroup() |>
   arrange(topic, -beta)
 
-# Top term models 
+# Create visual
 top_terms |>
   mutate(term = reorder_within(term, beta, topic)) |>
   ggplot(aes(beta, term, fill = factor(topic))) +
   theme_minimal() +
   geom_col(show.legend = FALSE) +
-  facet_wrap(~ topic, scales = "free") +
+  facet_wrap(~ topic, scales = "free", ncol = 2) +
   scale_y_reordered() +
+  labs(x = "Beta-value", y = "Words", fill = "Topic", 
+       title = "Most Common Words by Topic") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
 
 ```
 
-```{r, warning = FALSE, fig.width = 14, fig.height = 10}
+In particular, I chose to focus on three of the topics: 1, 4, and 10.
 
-# Extract the top n high beta value words
+Topic 1 shows that the most common words are found, cottage, wood, fire, and day. This topic gives very simple words that seem to be when the The Creature is telling his story and thus has a limited knowledge of the world and talks of basic utilities and needs.
+
+Topic 4's most common words were ice, friend, feel, eyes, death. This most likely represents Captain Robert Walton who was on an expedition to Antarctica when he met Victor Frankenstein and the The Creature. These words all seem ominous and make sense with all the death that occurs in the frozen landscape at the culmination of the novel.
+
+Topic 10's most common words were Elizabeth, life, father, day, happiness, and death. This seems to be Victor Frankenstein's narration because one of his main devotions in life was towards his adopted sister, Elizabeth. His father was also an important figure in his life. He also "gave life" to his creation: The Creature.
+
+After, that, I examined the per-document-per-topic probabilities ("gamma") which gives the estimated proportion of words from that document that are generated from that topic. For example, this model predicts that a large portion of the words from Chapter 11 and Chapter 12 are generated from Topic 1. Looking back, we can see that this topic (Topic 1) corresponded to the beginning of The Creature's life/narration which is true since The Creature's narration spans from Chapter 11 to Chapter 16. Using our other example chapters, we can see that Letter 4 and Chapter 24 both are estimated to be generated from Topic 4 which corresponds to Captain Robert Walton's narration! And finally, Chapter 4 and Chapter 22 are estimated to be generated from Topic 10 which we had decided was Victor Frankenstein's narration.
+
+```{r, fig.width = 12, fig.height = 16}
+
+# Per-document-per-topic probabilities
+topics_gamma <- tidy(lda_model, matrix = "gamma") |>
+  mutate(document = factor(document, levels = section_names))
+
+# Create visual
+ggplot(topics_gamma, aes(x = document, y = gamma, fill = factor(topic))) +
+  geom_bar(stat ="identity") +
+  facet_wrap(~ topic, scales = "free", ncol = 2) +
+  theme_minimal() +
+  labs(x = "Section", y = "Topic Proportion", fill = "Topic", 
+       title = "Gamma Topic Distribution Across Frankenstein") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+Now, going back and using the beta values again, I made a graph that would show the amount of "high beta" words at the different sections of the book.
+
+```{r, warning = FALSE, fig.width = 12, fig.height = 16}
+
+# Extract high beta value words
 high_prob_words <- tidy(lda_model, matrix = "beta") |>
   group_by(topic) |>
-  top_n(30, beta) |> 
+  filter(beta > 0.001) |> 
   ungroup()
 
+# Use from above
 frankenstein_terms <- Frankenstein_LDA |>
   rename(term = word)
 
+# Count the words by joining
 count_words <- frankenstein_terms |>
   semi_join(high_prob_words, by = "term") |>
   count(section_label, term) 
 
+# Sum them up
 final_count <- count_words |>
   left_join(high_prob_words, by = "term") |>
   select(section_label, term, topic, n) |>
   group_by(section_label, topic) |>
   summarize(total_words = sum(n), by = "section_label")
 
-
+# Create visual
 ggplot(final_count, aes(x = section_label, y = total_words, fill = factor(topic))) +
   geom_bar(stat = "identity") +
   theme_minimal() +
-  facet_wrap(~ topic, scales = "free") +
-  labs(x = "Section", y = "Count of High-Probability Words", fill = "Topic",
-       title = "High Beta Value Words by Topic") +
+  facet_wrap(~ topic, scales = "free", ncol = 2) +
+  labs(x = "Section", y = "Frequency of High-Beta Words", fill = "Topic",
+       title = "High-Beta Value Words by Topic") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 ```
 
+This visual is honestly very similar to the one above, but gives some more insights. For example, for Topic 4, we can see that there are way more high value words in Chapter 24 than in Letter 4, but there is still a spike in each of them.
 
-
-
-
-
-
+Overall, LDA topic modelling was able to detect some of the framing device that was used in Frankenstein. Obviously, the model is not perfect and there were many of the topics that had words from all of the book, but with potentially more fine-tuning of parameters the model could perform better.
