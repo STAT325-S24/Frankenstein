@@ -4,6 +4,8 @@ library(dplyr)
 library(tidyverse)
 
 
+anno <- readRDS("~/Documents/GitHub/Frankenstein/data/anno_frankenstein.Rds")
+
 token_with_chapters <- anno$token |>
   mutate(section_number = 
            cumsum((str_detect(token, regex("^Chapter", ignore_case = FALSE)) 
@@ -16,22 +18,36 @@ token_with_chapters <- anno$token |>
            section_number %in% c(15, 16, 17, 18, 19, 20) ~ "The Creature"
          ))
 
-average_sentence_length <- token_with_chapters |>
-  group_by(section_number, doc_id, sid) |>
-  summarise(tokens_per_sentence = n(), .groups = 'drop') |>
-  group_by(section_number, doc_id) |>
-  summarise(average_length = mean(tokens_per_sentence)) #|>
-  #ungroup() |>
-  #group_by(section_number) |>
-  #summarise(chapter_average = mean(average_length))
 
-section_average_sentence <- token_with_chapters |>
-  group_by(section_number, doc_id, sid) |>
+
+
+average_sentence_length <- token_with_chapters |>
+  group_by(narrator, section_number, doc_id, sid) |>
   summarise(tokens_per_sentence = n(), .groups = 'drop') |>
-  group_by(section_number, doc_id) |>
-  summarise(average_length = mean(tokens_per_sentence)) |>
-  ungroup() |>
-  filter(section_number == 1)
+  group_by(narrator, section_number, doc_id) |>
+  summarise(
+    average_length = mean(tokens_per_sentence),
+    num_sentences = n(),
+    .groups = 'drop'
+  ) |>
+  ungroup() 
+
+
+#  group_by(narrator, section_number) |>
+ # summarise(
+  #  chapter_average = mean(average_length),
+   # total_sentences = sum(num_sentences),
+    #.groups = 'drop'
+#  )
+
+#section_average_sentence <- token_with_chapters |>
+#  group_by(section_number, doc_id, sid) |>
+#  summarise(tokens_per_sentence = n(), .groups = 'drop') |>
+#  group_by(section_number, doc_id) |>
+#  summarise(average_length = mean(tokens_per_sentence)) |>
+#  ungroup() |>
+#  filter(section_number == 1)
+
 
 #verbs <- token_with_chapters |> 
  # filter(upos == "VERB") |>
@@ -43,7 +59,7 @@ section_average_sentence <- token_with_chapters |>
 
 
 # Load your dataset
-novel_data <- readRDS("~/Documents/GitHub/Frankenstein/data/anno_frankenstein.Rds")
+anno <- readRDS("~/Documents/GitHub/Frankenstein/data/anno_frankenstein.Rds")
 tokens <- novel_data$token
 entities <- novel_data$entity
 
@@ -70,7 +86,7 @@ ui <- navbarPage("Style",
     ),
     fixedRow(
       column(12,
-             mainPanel(plotOutput(outputId = "part_of_speech")),
+             mainPanel(plotOutput(outputId = "part_of_speech"))
       )
     )
   )
@@ -84,17 +100,22 @@ tabPanel("New Tab", # This is your new tab
              column(4,
                     wellPanel(
                       
-                      selectInput(inputId = "pos_type", 
+                      selectInput(inputId = "section_num", 
                                   label = "Choose section:",
-                                  choices = c(1:28))
+                                  choices = c(1:28)),
+                      # Add this inside your UI definition, probably under a wellPanel or similar container
+                      radioButtons(inputId = "plot_choice", 
+                                   label = "Choose plot type:",
+                                   choices = c("Average Sentence Length" = "avg_length", 
+                                               "Number of Sentences" = "num_sentences"))
+                      
+                      
                       
                     )
              ),
            fixedRow(
              column(12,
-                    mainPanel(
-                      textOutput(outputId = "sentence_length")
-                    )
+                    mainPanel(plotOutput(outputId = "sentence_length"))
              )
            )
          )
@@ -126,10 +147,38 @@ server <- function(input, output) {
            x = "Section", y = "Frequency")
   })
   
+ # output$sentence_length <- renderPlot({
+#    average_sentence_length |>
+      
+#      ggplot(aes(x = section_number, y = chapter_average)) +
+#      geom_point(aes(size = total_sentences, color = narrator)) + geom_smooth() +
+#      theme_minimal() 
+#  })
+  
   output$sentence_length <- renderPlot({
-    average_sentence_length |>
-      ggplot(aes(x = as.factor(section_number), y = average_length)) +
-      geom_boxplot()
+    input$plot_choice |> 
+      switch(
+        avg_length = {
+          average_sentence_length |>
+          group_by(narrator, section_number) |>
+          summarise(
+          chapter_average = mean(average_length),
+          total_sentences = sum(num_sentences),
+          .groups = 'drop') |>
+          ggplot(aes(x = section_number, y = chapter_average)) +
+          geom_point(aes(size = total_sentences, color = narrator)) + geom_smooth() +
+          theme_minimal() 
+        },
+        num_sentences = {
+          average_sentence_length |>
+            #filter(section_number %in% input$section_num) |> 
+            #mutate(sentence_num = row_number()) |>
+            ggplot(aes(x = doc_id, y = average_length)) +
+            geom_col(aes(fill = narrator)) +
+            geom_smooth(se = FALSE) +
+            theme_minimal() 
+        }
+      )
   })
   
   
