@@ -4,6 +4,7 @@ library(dplyr)
 library(tidyverse)
 
 
+
 anno <- readRDS("~/Documents/GitHub/Frankenstein/data/anno_frankenstein.Rds")
 
 token_with_chapters <- anno$token |>
@@ -57,14 +58,17 @@ average_sentence_length <- token_with_chapters |>
 
 
 
+# need to remove names ? and __
+bigrams_with_sections <- token_with_chapters |>
+  filter(upos %in% c("NOUN", "ADJ", "VERB", "ADV", "PROPN")) |>
+  group_by(doc_id, section_number, sid) |>
+  mutate(next_word = lead(token, order_by = tid)) |> 
+  ungroup() |>
+  filter(!is.na(next_word)) |>
+  unite("bigram", c(token, next_word), sep = " ") |> 
+  count(bigram, section_number, sort = TRUE) 
 
-# Load your dataset
-anno <- readRDS("~/Documents/GitHub/Frankenstein/data/anno_frankenstein.Rds")
-tokens <- novel_data$token
-entities <- novel_data$entity
 
-
-# For TAB 1 widgets:
 
 # ui
 ui <- navbarPage("Style", 
@@ -79,7 +83,7 @@ ui <- navbarPage("Style",
              selectInput(inputId = "pos_type", 
                          label = "Choose POS:",
                          choices = c("Verb" = "VERB", "Noun" = "NOUN", 
-                                     "Noun" = "NOUN", "Proper Noun" = "PROPN",
+                                      "Proper Noun" = "PROPN",
                                      "Adjective" = "ADJ", "Adverb" = "ADV"))
              
            )
@@ -92,22 +96,21 @@ ui <- navbarPage("Style",
   )
 )
 ),
-tabPanel("New Tab", # This is your new tab
+tabPanel("Sentence Structure", 
          fixedPage(
            titlePanel("Sentence Length"),
           
            fixedRow(
              column(4,
                     wellPanel(
-                      
-                      selectInput(inputId = "section_num", 
-                                  label = "Choose section:",
-                                  choices = c(1:28)),
-                      # Add this inside your UI definition, probably under a wellPanel or similar container
                       radioButtons(inputId = "plot_choice", 
                                    label = "Choose plot type:",
-                                   choices = c("Average Sentence Length" = "avg_length", 
-                                               "Number of Sentences" = "num_sentences"))
+                                   choices = c("Average Sentence Length through Novel" = "avg_length_whole_novel", 
+                                               "Number of Sentences by Chapter" = "num_sentences_by_chapter")),
+                      selectInput(inputId = "section_num", 
+                                  label = "Choose section:",
+                                  choices = c(1:28))
+
                       
                       
                       
@@ -158,7 +161,7 @@ server <- function(input, output) {
   output$sentence_length <- renderPlot({
     input$plot_choice |> 
       switch(
-        avg_length = {
+        avg_length_whole_novel = {
           average_sentence_length |>
           group_by(narrator, section_number) |>
           summarise(
@@ -169,10 +172,10 @@ server <- function(input, output) {
           geom_point(aes(size = total_sentences, color = narrator)) + geom_smooth() +
           theme_minimal() 
         },
-        num_sentences = {
+        num_sentences_by_chapter = {
           average_sentence_length |>
-            #filter(section_number %in% input$section_num) |> 
-            #mutate(sentence_num = row_number()) |>
+            filter(section_number %in% input$section_num) |> 
+            mutate(sentence_num = row_number()) |>
             ggplot(aes(x = doc_id, y = average_length)) +
             geom_col(aes(fill = narrator)) +
             geom_smooth(se = FALSE) +
