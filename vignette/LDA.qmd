@@ -105,9 +105,12 @@ narrators <-
     section_number = readr::parse_number(section_names),
     narrator = case_when(
       str_detect(section_names, "letter") ~ "Captain Walton",
-      str_detect(section_names, "chapter") & section_number <= 10 ~ "Victor Frankenstein",
-      str_detect(section_names, "chapter") & between(section_number, 11, 16) ~ "The Creature",
-      str_detect(section_names, "chapter") & section_number >= 17 ~ "Victor Frankenstein"
+      str_detect(section_names, "chapter") 
+      & section_number <= 10 ~ "Victor Frankenstein",
+      str_detect(section_names, "chapter") 
+      & between(section_number, 11, 16) ~ "The Creature",
+      str_detect(section_names, "chapter") 
+      & section_number >= 17 ~ "Victor Frankenstein"
     )
   ) |> 
   rename(document = "section_names")
@@ -150,11 +153,14 @@ top_terms <- topics_beta |>
   ungroup() |>
   arrange(topic, -beta)
 
-topic_names <- c("1: \"The Creature's birth\"", "2: \"Frankenstein's Studies\"", "3: \"Justine's Trial\"",
-                 "4: \"Walton in Antarctica\"", "5: \"Frankenstein's Guilt\"", "6: \"Frankenstein on the Run\"",
-                 "7: \"Frankenstein at Home\"", "8: \"Creating the Creature\"", "9: \"Frankenstein in Antarctica\"",
-                 "10: \"Frankenstein's Love\"", "11: \"The Creature Learning\"", "12: \"The Creature Betrayed\"")
-
+topic_names <- c("1: \"The Creature's birth\"", "2: \"Frankenstein's Studies\"", 
+                 "3: \"Justine's Trial\"", "4: \"Walton in Antarctica\"", 
+                 "5: \"Frankenstein's Guilt\"", 
+                 "6: \"Frankenstein on the Run\"",
+                 "7: \"Frankenstein at Home\"", "8: \"Creating the Creature\"", 
+                 "9: \"Frankenstein in Antarctica\"", 
+                 "10: \"Frankenstein's Love\"", "11: \"The Creature Learning\"", 
+                 "12: \"The Creature Betrayed\"")
 
 # Create visual
 top_terms |>
@@ -168,10 +174,6 @@ top_terms |>
   labs(x = "Beta-value", y = "Words", fill = "Topic", 
        title = "Most Common Words by Topic") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
-  
-
-
-
 ```
 
 In particular, I chose to focus on three of the topics: 1: The Creature's Birth, 4: Walton in Antarctica, and 10: Frankenstein's Love.
@@ -207,7 +209,8 @@ gamma_with_narrator |>
   theme_minimal() +
   labs(x = "Section", y = "Topic Proportion", fill = "Topic", 
        title = "Gamma Topic Distribution Across Frankenstein") +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1), legend.position = "bottom")
+  theme(axis.text.x = element_text(angle = 90, hjust = 1), 
+        legend.position = "bottom")
 
 
 ```
@@ -215,7 +218,8 @@ gamma_with_narrator |>
 
 ## Conclusion
 
-Overall, LDA topic modelling was able to detect some of the framing device that was used in Frankenstein. Obviously, the model is not perfect and there were many of the topics that had words from all of the book, but with potentially more fine-tuning of parameters the model could perform better.
+Overall, the LDA topic modeling provided insights into the narrative structure within *Frankenstein* and was able to identify several elements of the framing device employed throughout the text. 
+Although the model was not perfect as there were numerous topics with words dispersed across the entire book, refining the parameters could enhance its precision and effectiveness in distinguishing distinct narrative elements.
 
 \newpage
 
