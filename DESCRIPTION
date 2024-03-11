@@ -1,6 +1,6 @@
 Package: Frankenstein
 Title: Creates A Frankenstein Dataset
-Version: 0.2.0
+Version: 0.3.0
 Authors@R: 
     person(given = "Justin", family = "Papagelis", email = "jpapagelis24@amherst.edu", role = c("aut", "cre"))
 Description: This package uses the `gutenbergr` package to get the text of the book Frankenstein and then splits the lines of text up by section to facilitate text analysis.

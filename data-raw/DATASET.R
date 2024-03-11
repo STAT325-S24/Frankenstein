@@ -1,4 +1,4 @@
-## code to prepare `DATASET` dataset goes here
+## code to prepare `Frankenstein` dataset goes here
 
 #install.packages("gutenbergr")
 library(gutenbergr)
@@ -40,5 +40,9 @@ Frankenstein <- tibble(line = Frankenstein$line,
                        section_type = Frankenstein$section_type
 )
 usethis::use_data(Frankenstein, overwrite = TRUE)
+
+anno_Frankenstein <- readRDS("data-raw/anno_frankenstein.Rds")
+usethis::use_data(anno_Frankenstein, overwrite = TRUE)
+
 
 
