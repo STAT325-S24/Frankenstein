@@ -1,11 +1,13 @@
 library(shiny)
 library(cleanNLP)
-library(dplyr)
 library(tidyverse)
+library(Frankenstein)
 
+# this needs to be fixed (see https://github.com/STAT325-S24/Frankenstein/issues/12)
+# NJH removed the absolute filename (so he could run the app)
+# eventually this will need to be accessed from within the Frankenstein package
+anno <- readRDS("data/anno_frankenstein.Rds")
 
-
-anno <- readRDS("~/Documents/GitHub/Frankenstein/data/anno_frankenstein.Rds")
 
 token_with_chapters <- anno$token |>
   mutate(section_number = 
