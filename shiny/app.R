@@ -177,59 +177,36 @@ bigrams_with_sections <- token_with_chapters |>
 
 # ui
 ui <- navbarPage("Style", 
-  tabPanel("Parts of Speech",
-  fixedPage(
-  
-  titlePanel("Parts of Speech"),
-  fixedRow(
-    column(4,
-           wellPanel(
-  
-             selectInput(inputId = "pos_type", 
-                         label = "Choose POS:",
-                         choices = c("Verb" = "VERB", "Noun" = "NOUN", 
-                                      "Proper Noun" = "PROPN",
-                                     "Adjective" = "ADJ", "Adverb" = "ADV"))
-             
-           )
-    ),
-    fixedRow(
-      column(12,
-             mainPanel(plotOutput(outputId = "part_of_speech"))
-      )
-    )
-  )
-)
-),
-tabPanel("Delete", 
-         fixedPage(
-           titlePanel("Delete"),
-          
-           fixedRow(
-             column(4,
-                    wellPanel(
-                      radioButtons(inputId = "plot_choice", 
-                                   label = "Choose plot type:",
-                                   choices = c("Average Sentence Length through Novel" = "avg_length_whole_novel", 
-                                               "Number of Sentences by Chapter" = "num_sentences_by_chapter")),
-                      selectInput(inputId = "section_num", 
-                                  label = "Choose section:",
-                                  choices = c(1:28))
-
-                      
-                      
-                      
-                    )
-             ),
-           fixedRow(
-             column(12,
-                    mainPanel(plotOutput(outputId = "sentence_length"))
+  # TAB 1: ABOUT
+  tabPanel("About", 
+           fixedPage(
+             titlePanel("About"),
+             # ADD ABOUT SECTION HERE
              )
-           )
-         )
-)
-),
-tabPanel("Sentence Structure",
+           ),
+  
+  # TAB 2: PARTS OF SPEECH
+  tabPanel("Parts of Speech",
+           fixedPage(
+             titlePanel("Parts of Speech"),
+             fixedRow(
+               column(4,
+                      wellPanel(
+                        selectInput(inputId = "pos_type", label = "Choose POS:",
+                                    choices = c("Verb" = "VERB", 
+                                                "Noun" = "NOUN", 
+                                                "Proper Noun" = "PROPN", 
+                                                "Adjective" = "ADJ", 
+                                                "Adverb" = "ADV"))
+                        )
+                      ),
+               fixedRow(column(12, mainPanel(plotOutput(outputId = "part_of_speech"))))
+              )
+            )
+          ),
+
+  # TAB 3: SENTENCE STRUCTURE
+  tabPanel("Sentence Structure",
          fixedPage(
            titlePanel("Interactive Sentence Structure"),
            fluidRow(
@@ -240,16 +217,11 @@ tabPanel("Sentence Structure",
                                   choices = c("All", as.character(1:28))) 
                     )
              ),
-             column(12,
-                    plotlyOutput("sentencePlot") 
-             ),
-             column(12,
-                     
-                        verbatimTextOutput("selectedSentenceDetails")
-             )
-           )
-         )
-)
+             column(12, plotlyOutput("sentencePlot")),
+             column(12, verbatimTextOutput("selectedSentenceDetails"))
+            )
+          )
+  )
 )
 
 
@@ -330,7 +302,7 @@ server <- function(input, output) {
     eventdata <- event_data("plotly_click", source = 'sentencePlot')
     if (!is.null(eventdata)) {
       selected_index <- eventdata$pointNumber + 1  # Adjust index
-      selected_sentence <- filtered_data()[selected_index, ]
+      selected_sentence <- filtered_data()[selected_index, ] # str_wrap(string, width = 80, indent = 0, exdent = 0)
       sentence <- paste("Selected Sentence:", selected_sentence$sentence)
       narrator <- paste("Narrator", selected_sentence$narrator)
       nouns <- paste("Nouns:", selected_sentence$num_nouns)
@@ -338,6 +310,8 @@ server <- function(input, output) {
       adjs <- paste("Adjectives:", selected_sentence$num_adjectives)
       advs <- paste("Adverbs:", selected_sentence$num_adverbs)
       num_words <- paste("Number of words:", selected_sentence$num_words)
+      
+      sentence <- str_wrap(sentence, width = 115) # make adjustable
       
       
       
