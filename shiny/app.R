@@ -244,7 +244,8 @@ tabPanel("Sentence Structure",
                     plotlyOutput("sentencePlot") 
              ),
              column(12,
-                    verbatimTextOutput("selectedSentenceDetails") 
+                     
+                        verbatimTextOutput("selectedSentenceDetails")
              )
            )
          )
@@ -325,18 +326,25 @@ server <- function(input, output) {
   })
   
   # Display sentence details when a point is clicked
-  output$selectedSentenceDetails <- renderPrint({
+  output$selectedSentenceDetails <- renderText({
     eventdata <- event_data("plotly_click", source = 'sentencePlot')
     if (!is.null(eventdata)) {
       selected_index <- eventdata$pointNumber + 1  # Adjust index
       selected_sentence <- filtered_data()[selected_index, ]
-      print(paste("Selected Sentence:", selected_sentence$sentence))
-      print(paste("Narrator", selected_sentence$narrator))
-      print(paste("Nouns:", selected_sentence$num_nouns))
-      print(paste("Verbs:", selected_sentence$num_verbs))
-      print(paste("Adjectives:", selected_sentence$num_adjectives))
-      print(paste("Adverbs:", selected_sentence$num_adverbs))
-      print(paste("Number of words:", selected_sentence$num_words))
+      sentence <- paste("Selected Sentence:", selected_sentence$sentence)
+      narrator <- paste("Narrator", selected_sentence$narrator)
+      nouns <- paste("Nouns:", selected_sentence$num_nouns)
+      verbs <- paste("Verbs:", selected_sentence$num_verbs)
+      adjs <- paste("Adjectives:", selected_sentence$num_adjectives)
+      advs <- paste("Adverbs:", selected_sentence$num_adverbs)
+      num_words <- paste("Number of words:", selected_sentence$num_words)
+      
+      
+      
+      paste(sentence, narrator, nouns, verbs, adjs, advs, num_words,
+            sep = "\n")
+      
+      
     } else {
       "Click on a point in the plot to see information about the sentence."
     }
