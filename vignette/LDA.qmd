@@ -216,10 +216,16 @@ gamma_with_narrator |>
 ```
 
 
-## Conclusion
+## Results
 
 Overall, the LDA topic modeling provided insights into the narrative structure within *Frankenstein* and was able to identify several elements of the framing device employed throughout the text. 
 Although the model was not perfect as there were numerous topics with words dispersed across the entire book, refining the parameters could enhance its precision and effectiveness in distinguishing distinct narrative elements.
+
+## Shiny App
+FIND WAY TO LINK SHINY APP HERE AND MAYBE GIVE A DESCRIPTION
+
+## Conclusion
+WRAP UP THE WHOLE PROJECT
 
 \newpage
 

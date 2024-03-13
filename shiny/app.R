@@ -23,7 +23,7 @@ token_with_chapters <- anno$token |>
          ))
 
 extract_sentence_info <- function(df) {
-  # Initialize an empty data frame to store results
+  # Initialize empty df
   sentence_data <- tibble(
     narrator = character(),
     sentence = character(),
@@ -33,10 +33,10 @@ extract_sentence_info <- function(df) {
     num_adjectives = integer(),
     num_adverbs = integer(),
     num_words = integer(),
-    chapter_number = integer()
+    section_number = integer()
   )
   
-  # Variables for counting parts of speech within a sentence
+  # pos variables
   num_nouns <- num_verbs <- num_proper_nouns <- num_adjectives <- num_adverbs <- 0
   temp_sentence <- ""
   current_narrator <- df$narrator[1]  # Assuming the first entry gives the first narrator
@@ -82,7 +82,7 @@ extract_sentence_info <- function(df) {
         num_adjectives = num_adjectives,
         num_adverbs = num_adverbs,
         num_words = num_words,
-        chapter_number = current_chapter
+        section_number = current_chapter
       ))
       
       # Reset variables for next sentence
@@ -96,70 +96,18 @@ extract_sentence_info <- function(df) {
 
 sentence_info <- extract_sentence_info(token_with_chapters)
 
-
-
-
-average_sentence_length <- token_with_chapters |>
-  group_by(narrator, section_number, doc_id, sid) |>
-  summarise(tokens_per_sentence = n(), .groups = 'drop') |>
-  group_by(narrator, section_number, doc_id) |>
+pos_by_chap <- sentence_info |>
+  group_by(section_number, narrator) |>
   summarise(
-    average_length = mean(tokens_per_sentence),
-    num_sentences = n(),
-    .groups = 'drop'
-  ) |>
-  ungroup() 
-
-
-chapter_info <- token_with_chapters |>
-  filter(upos != "PUNCT") |>
-  group_by(narrator, section_number, doc_id, sid) |>
-  summarise(tokens_per_sentence = n(), .groups = 'drop') |>
-  group_by(narrator, section_number) |>
-  summarise(num_words = sum(tokens_per_sentence), num_sentences = n(), 
-            .groups = 'drop') |>
-  ungroup() |>
-  mutate(words_per_sentence = num_words/num_sentences)
-
-
-
-# done
-part_of_speech_df <- token_with_chapters |>
-  group_by(upos, section_number, narrator) |>
-  summarize(count = n(), .groups = "drop") |>
-  arrange(section_number) |>
-  pivot_wider(names_from = upos, values_from = count) |>
-  select(section_number, narrator, VERB, NOUN, PROPN, ADJ, ADV) |>
-  inner_join(chapter_info, by = c("section_number", "narrator")) |>
-  pivot_longer(cols = 3:7, names_to = "upos", values_to = "n" ) |>
-  mutate(prop = n/num_words)
-
-
-
-  
-
-
-#  group_by(narrator, section_number) |>
- # summarise(
-  #  chapter_average = mean(average_length),
-   # total_sentences = sum(num_sentences),
-    #.groups = 'drop'
-#  )
-
-#section_average_sentence <- token_with_chapters |>
-#  group_by(section_number, doc_id, sid) |>
-#  summarise(tokens_per_sentence = n(), .groups = 'drop') |>
-#  group_by(section_number, doc_id) |>
-#  summarise(average_length = mean(tokens_per_sentence)) |>
-#  ungroup() |>
-#  filter(section_number == 1)
-
-
-#verbs <- token_with_chapters |> 
- # filter(upos == "VERB") |>
-#  group_by(section_number, narrator) |>
-#  summarize(count = n(), .groups = "drop") |>
-#  arrange(section_number)
+    NOUN = sum(num_nouns),
+    VERB = sum(num_verbs),
+    PROPN = sum(num_proper_nouns),
+    ADJ = sum(num_adjectives),
+    ADV = sum(num_adverbs),
+    total_words = sum(num_words),
+    .groups = 'drop') |> 
+  pivot_longer(cols = 3:7, names_to = "upos", values_to = "count") |>
+  mutate(prop = count/total_words)
 
 
 
@@ -181,9 +129,29 @@ ui <- navbarPage("Style",
   tabPanel("About", 
            fixedPage(
              titlePanel("About"),
-             # ADD ABOUT SECTION HERE
+             fluidRow(
+               column(12,
+                      h3("Frankenstein Style Shiny App"),
+                      p("This Shiny App provides an exploration into the literary style and structure of Mary Shelley's novel, 'Frankenstein'. It allows users to explore the details of the text, including its unique sentence structures and the frequency of different parts of speech. This app offers a new perspective on this classic work."),
+                      br(),
+                      
+                      h4("Parts of Speech Tab"),
+                      p("Here is an in-depth analysis of the frequency and distribution of various parts of speech: nouns, proper nouns, adjectives, verbs, and adverbs relative to the total words in each section. Interactive charts and visualizations allow you to explore how these elements contribute to the novel's unique style."),
+                      br(),
+                      
+                      h4("Sentence Structure Tab"),
+                      p("Explore Mary Shelley's narrative style. This tab provides a detailed look at the sentence structure within 'Frankenstein', highlighting the variation in length and composition. Look at the frequency of different parts of speech in each sentence, the narrative voice, and the total word count to better understand the sentence structure."),
+                      br(),
+                      
+                      h4("About Me"),
+                      p("I am an Amherst College statistics student enrolled in STAT325: Text Analysis where I am using the skills I have learned to conduct an important analysis on a novel of my choosing!")
+                      
+               )
              )
-           ),
+           )
+  )
+  ,
+  
   
   # TAB 2: PARTS OF SPEECH
   tabPanel("Parts of Speech",
@@ -192,7 +160,7 @@ ui <- navbarPage("Style",
              fixedRow(
                column(4,
                       wellPanel(
-                        selectInput(inputId = "pos_type", label = "Choose POS:",
+                        selectInput(inputId = "pos_type", label = "Choose Part of Speech:",
                                     choices = c("Verb" = "VERB", 
                                                 "Noun" = "NOUN", 
                                                 "Proper Noun" = "PROPN", 
@@ -233,46 +201,19 @@ server <- function(input, output) {
   # TAB 1: INTERACTIVE Part of Speech Plot
   
   output$part_of_speech <- renderPlot({
-    part_of_speech_df |>
+    pos_by_chap |>
       filter(upos == input$pos_type) |>
       ggplot(aes(x = section_number, y = prop)) +
       geom_col(aes(fill = narrator)) +
       geom_smooth(se = FALSE) +
       theme_minimal() +
       theme(legend.position = "bottom") +
-      labs(title = "Frequency",
+      labs(title = "Frequency of Parts of Speech in Frankenstein",
            fill = "Narrator", 
            x = "Section", y = "Frequency")
   })
   
   
-  
-  
-  output$sentence_length <- renderPlot({
-    input$plot_choice |> 
-      switch(
-        avg_length_whole_novel = {
-          average_sentence_length |>
-          group_by(narrator, section_number) |>
-          summarise(
-          chapter_average = mean(average_length),
-          total_sentences = sum(num_sentences),
-          .groups = 'drop') |>
-          ggplot(aes(x = section_number, y = chapter_average)) +
-          geom_point(aes(size = total_sentences, color = narrator)) + geom_smooth() +
-          theme_minimal() 
-        },
-        num_sentences_by_chapter = {
-          average_sentence_length |>
-            filter(section_number %in% input$section_num) |> 
-            mutate(sentence_num = row_number()) |>
-            ggplot(aes(x = doc_id, y = average_length)) +
-            geom_col(aes(fill = narrator)) +
-            geom_smooth(se = FALSE) +
-            theme_minimal() 
-        }
-      )
-  })
   
   
   filtered_data <- reactive({
@@ -282,7 +223,7 @@ server <- function(input, output) {
         mutate(row_num = row_number())
     } else {
       sentence_info %>%
-        filter(chapter_number == as.numeric(input$selected_section)) |>
+        filter(section_number == as.numeric(input$selected_section)) |>
         mutate(row_num = row_number())
     }
   })
@@ -320,12 +261,9 @@ server <- function(input, output) {
       
       
     } else {
-      "Click on a point in the plot to see information about the sentence."
+      "Choose on a point in the scatter plot to see more information about the sentence."
     }
   })
-  
-  
-  
 }
 
 
