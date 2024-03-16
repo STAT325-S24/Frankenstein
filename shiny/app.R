@@ -6,10 +6,6 @@ library(plotly)
 
 anno <- anno_Frankenstein
 
-
-anno$token
-
-
 token_with_chapters <- anno$token |>
   mutate(section_number = 
            cumsum((str_detect(token, regex("^Chapter", ignore_case = FALSE)) 
@@ -18,12 +14,14 @@ token_with_chapters <- anno$token |>
                   & tid == 1),
          narrator = case_when(
            section_number %in% c(1, 2, 3, 4, 29) ~ "Captain Walton",
-           section_number %in% c(5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 21, 22, 23, 24, 25, 26, 27, 28) ~ "Victor Frankenstein",
+           section_number %in% c(5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 21, 22, 23, 
+                                 24, 25, 26, 27, 28) ~ "Victor Frankenstein",
            section_number %in% c(15, 16, 17, 18, 19, 20) ~ "The Creature"
          ))
 
+# create a function to pull out the parts of speech by sentence
 extract_sentence_info <- function(df) {
-  # Initialize empty df
+  # empty df
   sentence_data <- tibble(
     narrator = character(),
     sentence = character(),
@@ -36,10 +34,14 @@ extract_sentence_info <- function(df) {
     section_number = integer()
   )
   
-  # pos variables
-  num_nouns <- num_verbs <- num_proper_nouns <- num_adjectives <- num_adverbs <- 0
+  # part of speech variables
+  num_nouns <- 0
+  num_verbs <- 0
+  num_proper_nouns <- 0
+  num_adjectives <- 0
+  num_adverbs <- 0
   temp_sentence <- ""
-  current_narrator <- df$narrator[1]  # Assuming the first entry gives the first narrator
+  current_narrator <- df$narrator[1]  # set the first narrator
   
   for (i in 1:nrow(df)) {
     current_token <- df$token[i]
@@ -60,19 +62,20 @@ extract_sentence_info <- function(df) {
       num_adverbs <- num_adverbs + 1
     }
     
-    # Concatenate token to sentence, handling punctuation
-    if (current_upos != "PUNCT" && !str_detect(df$token[max(i - 1, 1)], "[.?!]")) {
+    # combine tokens to sentence, handling punctuation
+    if (current_upos != "PUNCT" && !str_detect(
+      df$token[max(i - 1, 1)], "[.?!]")) {
       temp_sentence <- paste(temp_sentence, current_token, sep = " ")
     } else {
       temp_sentence <- paste(temp_sentence, current_token, sep = "")
     }
     
-    # Check if the sentence ends, then save to data frame
+    # if sentence ends, add to df
     if (current_upos == "PUNCT" && str_detect(current_token, "[.?!]")) {
       temp_sentence <- str_squish(temp_sentence)  # Clean up sentence
       num_words <- str_count(temp_sentence, "\\S+")  # Count words
       
-      # Add sentence information to data frame
+      # Add variables to df
       sentence_data <- rbind(sentence_data, tibble(
         narrator = current_narrator,
         sentence = temp_sentence,
@@ -85,17 +88,18 @@ extract_sentence_info <- function(df) {
         section_number = current_chapter
       ))
       
-      # Reset variables for next sentence
+      # reset variables
       temp_sentence <- ""
       num_nouns <- num_verbs <- num_proper_nouns <- num_adjectives <- num_adverbs <- 0
     }
   }
-  
   return(sentence_data)
 }
 
+# extract the sentence info
 sentence_info <- extract_sentence_info(token_with_chapters)
 
+# summarize all of the information
 pos_by_chap <- sentence_info |>
   group_by(section_number, narrator) |>
   summarise(
@@ -109,20 +113,6 @@ pos_by_chap <- sentence_info |>
   pivot_longer(cols = 3:7, names_to = "upos", values_to = "count") |>
   mutate(prop = count/total_words)
 
-
-
-# need to remove names ? and __
-bigrams_with_sections <- token_with_chapters |>
-  filter(upos %in% c("NOUN", "ADJ", "VERB", "ADV", "PROPN")) |>
-  group_by(doc_id, section_number, sid) |>
-  mutate(next_word = lead(token, order_by = tid)) |> 
-  ungroup() |>
-  filter(!is.na(next_word)) |>
-  unite("bigram", c(token, next_word), sep = " ") |> 
-  count(bigram, section_number, sort = TRUE) 
-
-
-
 # ui
 ui <- navbarPage("Style", 
   # TAB 1: ABOUT
@@ -132,19 +122,39 @@ ui <- navbarPage("Style",
              fluidRow(
                column(12,
                       h3("Frankenstein Style Shiny App"),
-                      p("This Shiny App provides an exploration into the literary style and structure of Mary Shelley's novel, 'Frankenstein'. It allows users to explore the details of the text, including its unique sentence structures and the frequency of different parts of speech. This app offers a new perspective on this classic work."),
+                      p("This Shiny App provides an exploration into the 
+                        literary style and structure of Mary Shelley's novel, 
+                        'Frankenstein'. It allows users to explore the details 
+                        of the text, including its unique sentence structures 
+                        and the frequency of different parts of speech. 
+                        This app offers a new perspective on this classic 
+                        work."),
                       br(),
                       
                       h4("Parts of Speech Tab"),
-                      p("Here is an in-depth analysis of the frequency and distribution of various parts of speech: nouns, proper nouns, adjectives, verbs, and adverbs relative to the total words in each section. Interactive charts and visualizations allow you to explore how these elements contribute to the novel's unique style."),
+                      p("Here is an in-depth analysis of the frequency and 
+                        distribution of various parts of speech: nouns, proper 
+                        nouns, adjectives, verbs, and adverbs relative to the 
+                        total words in each section. Interactive charts and 
+                        visualizations allow you to explore how these elements 
+                        contribute to the novel's unique style."),
                       br(),
                       
                       h4("Sentence Structure Tab"),
-                      p("Explore Mary Shelley's narrative style. This tab provides a detailed look at the sentence structure within 'Frankenstein', highlighting the variation in length and composition. Look at the frequency of different parts of speech in each sentence, the narrative voice, and the total word count to better understand the sentence structure."),
+                      p("Explore Mary Shelley's narrative style. This tab 
+                        provides a detailed look at the sentence structure 
+                        within 'Frankenstein', highlighting the variation in 
+                        length and composition. Look at the frequency of 
+                        different parts of speech in each sentence, the 
+                        narrative voice, and the total word count to better 
+                        understand the sentence structure."),
                       br(),
                       
                       h4("About Me"),
-                      p("I am an Amherst College statistics student enrolled in STAT325: Text Analysis where I am using the skills I have learned to conduct an important analysis on a novel of my choosing!")
+                      p("My name is Justin Papagelis. I am an Amherst College 
+                        statistics student enrolled in STAT325: Text Analysis 
+                        where I am using the skills I have learned to conduct 
+                        an important analysis on a novel of my choosing!")
                       
                )
              )
@@ -160,7 +170,8 @@ ui <- navbarPage("Style",
              fixedRow(
                column(4,
                       wellPanel(
-                        selectInput(inputId = "pos_type", label = "Choose Part of Speech:",
+                        selectInput(inputId = "pos_type", 
+                                    label = "Choose Part of Speech:",
                                     choices = c("Verb" = "VERB", 
                                                 "Noun" = "NOUN", 
                                                 "Proper Noun" = "PROPN", 
@@ -168,7 +179,8 @@ ui <- navbarPage("Style",
                                                 "Adverb" = "ADV"))
                         )
                       ),
-               fixedRow(column(12, mainPanel(plotOutput(outputId = "part_of_speech"))))
+               fixedRow(column(12, mainPanel(plotOutput(
+                 outputId = "part_of_speech"))))
               )
             )
           ),
@@ -217,7 +229,7 @@ server <- function(input, output) {
   
   
   filtered_data <- reactive({
-    # Filter based on selected section
+    # filter based on selected section
     if (input$selected_section == "All") {
       sentence_info |>
         mutate(row_num = row_number())
@@ -243,7 +255,7 @@ server <- function(input, output) {
     eventdata <- event_data("plotly_click", source = 'sentencePlot')
     if (!is.null(eventdata)) {
       selected_index <- eventdata$pointNumber + 1  # Adjust index
-      selected_sentence <- filtered_data()[selected_index, ] # str_wrap(string, width = 80, indent = 0, exdent = 0)
+      selected_sentence <- filtered_data()[selected_index, ] 
       sentence <- paste("Selected Sentence:", selected_sentence$sentence)
       narrator <- paste("Narrator", selected_sentence$narrator)
       nouns <- paste("Nouns:", selected_sentence$num_nouns)
