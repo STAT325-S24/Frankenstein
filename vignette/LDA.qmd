@@ -188,7 +188,7 @@ Topic 10's most common words were Elizabeth, life, father, day, happiness, and d
 
 After, that, I examined the per-document-per-topic probabilities ("gamma") which gives the estimated proportion of words from that document that are generated from that topic. For example, this model predicts that a large portion of the words from Chapter 11 and Chapter 12 are generated from Topic 1. Looking back, we can see that this topic (The Creature's Birth) corresponded to the beginning of The Creature's life/narration which is true since The Creature's narration spans from Chapter 11 to Chapter 16. Using our other example chapters, we can see that Letter 4 and Letter 24.5 both are estimated to be generated from Topic 4 (Walton in Antarctica) which corresponds to Captain Robert Walton's narration! And finally, Chapter 4 and Chapter 22 are estimated to be generated from Topic 10 (Frankenstein's Love) which we had decided was Victor Frankenstein's narration.
 
-```{r, fig.width = 8, fig.height = 10, fig.cap = "Per-section-per-topic probabilities"}
+```{r, fig.width = 8, fig.height = 10, fig.cap = "Per-section-per-topic probabilities", warning = FALSE}
 
 # Per-document-per-topic probabilities
 topics_gamma <- tidy(lda_model, matrix = "gamma") |>
@@ -200,32 +200,58 @@ gamma_with_narrator <- topics_gamma |>
   pivot_longer(cols = 2:13, names_to = "topic", values_to = "gamma") |>
   mutate(document = factor(document, levels = section_names))
 
-# Create visual
-gamma_with_narrator |>
-  mutate(topic = factor(topic, levels = 1:12, labels = topic_names)) |>
-  ggplot(aes(x = document, y = gamma, fill = factor(narrator))) +
-  geom_bar(stat ="identity") +
-  facet_wrap(~ topic, scales = "free_y", ncol = 2) +
-  theme_minimal() +
-  labs(x = "Section", y = "Topic Proportion", fill = "Topic", 
-       title = "Gamma Topic Distribution Across Frankenstein") +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1), 
-        legend.position = "bottom")
+gamma_with_narrator <- gamma_with_narrator |>
+  mutate(topic_POV = case_when(topic %in% c(4) ~ "Walton Topic",
+      topic %in% c(2,3,5,6,7,9,10)  ~ "Frankenstein Topic",
+      topic %in% c(1,8,11,12)  ~ "Creature Topic")) 
 
+# Create visual
+walton_pov <- gamma_with_narrator |>
+  mutate(topic = factor(topic, levels = 1:12, labels = topic_names)) |>
+  filter(topic_POV == "Walton Topic") |>
+  ggplot(aes(x = document, y = gamma, group = topic, color = topic)) +
+  geom_rect(xmin = 0, xmax = 4, ymin = 0, ymax = 2, alpha = 0.01, fill = 'lightblue', inherit.aes = FALSE) +
+  geom_rect(xmin = 28.5, xmax = 29, ymin = 0, ymax = 2, alpha = 0.01, fill = 'lightblue', inherit.aes = FALSE) +
+  geom_point() + geom_smooth(se = FALSE, span = 0.5) + theme_minimal() +
+  labs(x = "Section", y = "Topic Proportion", fill = "Topic", 
+       title = "Gamma Topic Distribution Across Frankenstein With Walton's Topics Highlighted") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), 
+        legend.position = "bottom") + coord_cartesian(ylim = c(0, 1)) 
+
+frankenstein_pov <- gamma_with_narrator |>
+  mutate(topic = factor(topic, levels = 1:12, labels = topic_names)) |>
+  filter(topic_POV == "Frankenstein Topic") |>
+  ggplot(aes(x = document, y = gamma, group = topic, color = topic)) +
+  geom_rect(xmin = 4, xmax = 14, ymin = 0, ymax = 2, alpha = 0.01, fill = 'pink', inherit.aes = FALSE) +
+  geom_rect(xmin = 21, xmax = 28.5, ymin = 0, ymax = 2, alpha = 0.01, fill = 'pink', inherit.aes = FALSE) +
+  geom_point() + geom_smooth(se = FALSE, span = 0.5) + theme_minimal() +
+  labs(x = "Section", y = "Topic Proportion", fill = "Topic", 
+       title = "Gamma Topic Distribution Across Frankenstein With Frankenstein's Topics Highlighted") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), 
+        legend.position = "bottom") + coord_cartesian(ylim = c(0, 1)) 
+
+creature_pov <- gamma_with_narrator |>
+  mutate(topic = factor(topic, levels = 1:12, labels = topic_names)) |>
+  filter(topic_POV == "Creature Topic") |>
+  ggplot(aes(x = document, y = gamma, group = topic, color = topic)) +
+  geom_rect(xmin = 14, xmax = 21, ymin = 0, ymax = 2, alpha = 0.01, fill = 'lightgreen', inherit.aes = FALSE) +
+  geom_point() + geom_smooth(se = FALSE, span = 0.5) + theme_minimal() +
+  labs(x = "Section", y = "Topic Proportion", fill = "Topic", 
+       title = "Gamma Topic Distribution Across Frankenstein With The Creature's Topics Highlighted") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), 
+        legend.position = "bottom") + coord_cartesian(ylim = c(0, 1)) 
+
+gridExtra::grid.arrange(walton_pov, frankenstein_pov, creature_pov, ncol = 1)
 
 ```
 
-
-## Results
-
-Overall, the LDA topic modeling provided insights into the narrative structure within *Frankenstein* and was able to identify several elements of the framing device employed throughout the text. 
-Although the model was not perfect as there were numerous topics with words dispersed across the entire book, refining the parameters could enhance its precision and effectiveness in distinguishing distinct narrative elements.
 
 ## Shiny App
 FIND WAY TO LINK SHINY APP HERE AND MAYBE GIVE A DESCRIPTION
 
 ## Conclusion
-WRAP UP THE WHOLE PROJECT
+Overall, the LDA topic modeling provided insights into the narrative structure within *Frankenstein* and was able to identify several elements of the framing device employed throughout the text. 
+Although the model was not perfect as there were numerous topics with words dispersed across the entire book, refining the parameters could enhance its precision and effectiveness in distinguishing distinct narrative elements.
 
 \newpage
 
