@@ -3,6 +3,7 @@
 ^LICENSE\.md$
 ^data-raw$
 resources
+^shiny$
 README.qmd
 ^.*\.Rproj$
 vignette
