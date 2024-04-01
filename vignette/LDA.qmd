@@ -25,7 +25,19 @@ number_of_topics <- 12
 
 ## Introduction
 
-*Frankenstein; or, The Modern Prometheus* [@Shelley], written by Mary Shelley in 1818, is a groundbreaking work in the literary world that interweaves elements of Gothic literature with early ideas of science fiction. The novel tells the cautionary tale of Victor Frankenstein, a scientist who creates a sentient being, only to reject it which leads to tragic consequences for both the creator and the creature. The novel explores themes of ambition, responsibility, and the search for identity. *Frankenstein* has become an important dialogue about the limits of scientific exploration, the responsibilities of creators, and the societal implications of isolation and rejection. It raises essential questions about the nature of humanity, the pursuit of knowledge, and the consequences of ambition unhindered by ethical considerations. Additionally, *Frankenstein* has had an enduring influence on popular culture and media. The narrative unfolds through the perspectives of three distinct narrators: Captain Robert Walton, Victor Frankenstein, and The Creature. The use of multiple narrators allows Shelley to explore different viewpoints and layer the narrative with complex emotions and ethical questions, providing a rich tapestry of human experience and moral contemplation. Each narrative reflects each individual's experiences, biases, and emotional states, contributing to a many different perspectives of the same story. For this analysis, I would like to see if the sections told by different narrators vary from each other. A short example of the first couple of lines of each narrator's first section is shown in Table \ref{example_text}.
+### Motivation
+
+*Frankenstein; or, The Modern Prometheus* [@Shelley], written by Mary Shelley, is a groundbreaking work in the literary world that interweaves elements of Gothic literature with early ideas of science fiction. The novel tells the cautionary tale of Victor Frankenstein, a scientist who creates a sentient being, only to reject it which leads to tragic consequences for both the creator and the creature. 
+
+The novel explores themes of ambition, responsibility, and the search for identity. *Frankenstein* has become an important dialogue about the limits of scientific exploration, the responsibilities of creators, and the societal implications of isolation and rejection. It raises essential questions about the nature of humanity, the pursuit of knowledge, and the consequences of ambition unhindered by ethical considerations. 
+
+Additionally, *Frankenstein* has had an enduring influence on popular culture and media. The novel has broken free from its literary roots to inspire adaptations across theater, cinema, comics, visual arts, music, and television. Its narrative has been reinterpreted in countless ways, from early 19th-century stage adaptations to cinematic portrayals like Boris Karloff's in 1931 and countless others. The story has fueled a vast array of creative expressions, including graphic novels, songs, and even ballets, reflecting its universal themes of creation, ethics, and identity [@walker_evolution_2018].
+
+### Purpose
+
+The narrative unfolds through the perspectives of three distinct narrators: Captain Robert Walton, Victor Frankenstein, and The Creature. The use of multiple narrators allows Shelley to explore different viewpoints and layer the narrative with complex emotions and ethical questions, providing a rich tapestry of human experience and moral contemplation. Each narrative reflects each individual's experiences, biases, and emotional states, contributing to a many different perspectives of the same story. 
+
+For this analysis, I would like to see if the sections told by different narrators vary from each other. A short example of the first couple of lines of each narrator's first section is shown in Table \ref{example_text}.
 
 ```{r, extract lines function}
 get_first_n_lines <- function(section_number, letter_or_chapter, n) {
@@ -83,13 +95,16 @@ The novel is told using a framing device which is basically a story within a sto
 
 -   Walton: *Rest of Chapter 24*
 
-For this part of my analysis, I use Latent Dirichlet Allocation (LDA) which was first used in machine learning by David Blei, Andrew Ng and Michael I. Jordan [@Blei]. It is a method of topic modelling to try that I will use to see if there is evidence of the framing device within the novel. In other words, I would like to see if LDA can detect the parts of the story that are written by the same narrator. To do this in R, I will utilize methods explained in "tidytext" [@tidytext], as well as the `topicmodels` package [@topicmodels] and the `stringr` package [@stringr].
+For this part of my analysis, I use Latent Dirichlet Allocation (LDA) [@Blei]. LDA is a method of topic modelling to try that I will use to see if there is evidence of the framing device within the novel. In other words, I would like to see if LDA can detect the parts of the story that are written by the same narrator. To do this in R, I will utilize methods explained in "tidytext" [@tidytext], as well as the `topicmodels` package [@topicmodels] and the `stringr` package [@stringr].
+
+## Analysis
 
 ## Initial Wrangling
 
+### Example of Tokenized Data
+
 To begin, the novel is pre-processed to remove common stop words, numbers, and other miscellaneous words. To create a unique label for each chapter, I combined the section and the section type as well as removed "section 0" which was the table of contents. To further wrangle the data, I split Chapter 24 into two parts, each corresponding to one narrator. I also tokenized the novel which splits the novel into individual words. See Table \ref{token} for an example of the tokenized data.
 
-Next, I created the document-word matrix and an LDA model using a value of `k=``r number_of_topics` which means that the LDA model will isolate topics. I decided to separate the novel into `r number_of_topics` topics because since the novel is long and there are many plot lines, this greater number of topics will help identify distinct topics. 
 
 ```{r, message = FALSE}
 # Pre-processing
@@ -103,7 +118,6 @@ section_names <- c("letter 1", "letter 2", "letter 3", "letter 4", "chapter 1",
               "chapter 16", "chapter 17", "chapter 18", "chapter 19", 
               "chapter 20", "chapter 21", "chapter 22", "chapter 23",
               "chapter 24", "letter 24.5")
-
 
 
 narrators <- 
@@ -140,7 +154,13 @@ Frankenstein_LDA |>
   head(20) |>
   kableExtra::kable(booktabs = TRUE, col.names = c("Line", "Section", "Word"),
                     caption = "Example of Tokenized Novel\\label{token}") 
+```
 
+### Creating the Document-Word Matrix and LDA Model
+
+Next, I created the document-word matrix and an LDA model using a value of `k=``r number_of_topics` which means that the LDA model will isolate topics. I decided to separate the novel into `r number_of_topics` topics because the novel is long and there are many plot lines, this greater number of topics may help identify distinct topics. 
+
+```{r, message = FALSE}
 # Create the document-word matrix
 dtm <- Frankenstein_LDA |>
   count(section_label, word) |>
@@ -150,9 +170,12 @@ dtm <- Frankenstein_LDA |>
 lda_model <- LDA(dtm, k = number_of_topics, control = list(seed = 1)) 
 ```
 
+
 ## Beta Analysis
 
-First, I looked at the per-topic-per-word probabilities to extract the top words that are used in each of the topics. An example of the beta values for the word "death" are shown in Table \ref{beta_death}. As you can see, Topic 5 has a much larger beta value than the other topics which suggests that "death" is a word more associated with Topic 5. Then I created a graphic using `ggplot` [@ggplot] to show the most common words in each of the topics. The graphic is shown below in Figure \ref{top_terms}. 
+### Example of Beta Values
+
+First, I looked at the per-topic-per-word probabilities to extract the top words that are used in each of the topics. An example of the beta values for the word "death" are shown in Table \ref{beta_death}. As you can see, Topic 10 and Topic 5 have a much larger beta value than the other topics which suggests that "death" is a word more associated with Topic 5 and Topic 10. 
 
 ```{r }
 # Per-topic-per-word probabilities
@@ -160,14 +183,16 @@ topics_beta <- tidy(lda_model, matrix = "beta")
 
 topics_beta |>
   filter(term == "death")   |>
+  arrange(desc(beta)) |>
   kableExtra::kable(booktabs = TRUE, col.names = c("Topic", "Term", "Beta"),
-                    caption = "Beta Values for \"Death\"\\label{beta_death}", 
+                    caption = "Beta Values for the word
+                    \"Death\"\\label{beta_death}", 
                     digits = 4) 
 ```
 
+### Most Common Words by Topic
 
-
-
+Next, I created a graphic using `ggplot` @ggplot to show the most common words in each of the topics. The graphic is shown below in Figure \ref{top_terms}. 
 
 ```{r top_terms, fig.width = 8, fig.height = 12, fig.cap = "Figure of most common words in each topic\\label{top_terms}"}
 
@@ -214,7 +239,9 @@ Topic 10's most common words were Elizabeth, life, father, day, happiness, and d
 
 ## Gamma Analysis
 
-After, that, I examined the per-document-per-topic probabilities ("gamma") which gives the estimated proportion of words from that document that are generated from that topic. The visual is shown in Figure \ref{gamma}. For example, this model predicts that a large portion of the words from Chapter 11 and Chapter 12 are generated from Topic 1. Looking back, we can see that this topic (The Creature's Birth) corresponded to the beginning of The Creature's life/narration which is true since The Creature's narration spans from Chapter 11 to Chapter 16. Using our other example chapters, we can see that Letter 4 and Letter 24.5 both are estimated to be generated from Topic 4 (Walton in Antarctica) which corresponds to Captain Robert Walton's narration! And finally, Chapter 4 and Chapter 22 are estimated to be generated from Topic 10 (Frankenstein's Love) which we had decided was Victor Frankenstein's narration. See Table \ref{gamma_chap} for the gamma values used in the examples above.
+### Example of Gamma Values
+
+After, that, I examined the per-document-per-topic probabilities ("gamma") which gives the estimated proportion of words from that document that are generated from that topic.For example, this model predicts that a large portion of the words from Chapter 11 and Chapter 12 are generated from Topic 1. Looking back, we can see that this topic (The Creature's Birth) corresponded to the beginning of The Creature's life/narration which is true since The Creature's narration spans from Chapter 11 to Chapter 16. Using our other example chapters, we can see that Letter 4 and Letter 24.5 both are estimated to be generated from Topic 4 (Walton in Antarctica) which corresponds to Captain Robert Walton's narration! And finally, Chapter 4 and Chapter 22 are estimated to be generated from Topic 10 (Frankenstein's Love) which we had decided was Victor Frankenstein's narration. See Table \ref{gamma_chap} for the gamma values used in the examples above.
 
 ```{r}
 
@@ -242,8 +269,11 @@ topics_gamma |>
                     digits = 2) 
 ```
 
+### Gamma Topic Distribution by Narrator
 
-```{r, fig.width = 8, fig.height = 10, fig.cap = "Per-section-per-topic probabilities\\label{gamma}", warning = FALSE}
+A more intuitive visual to view these results is shown in figure \ref{gamma}. Looking at this graphic, it is easier to visualize which topics correspond to which narrator.
+
+```{r, fig.width = 8, fig.height = 10, fig.cap = "Per-section-per-topic probabilities\\label{gamma}", warning = FALSE, message = FALSE}
 # Create visual
 walton_pov <- gamma_with_narrator |>
   mutate(topic = factor(topic, levels = 1:12, labels = topic_names)) |>
@@ -253,8 +283,7 @@ walton_pov <- gamma_with_narrator |>
             fill = 'lightblue', inherit.aes = FALSE) +
   geom_rect(xmin = 28.5, xmax = 29, ymin = 0, ymax = 2, alpha = 0.01, 
             fill = 'lightblue', inherit.aes = FALSE) +
-  geom_point() + geom_smooth(se = FALSE, span = 0.5, method = 'loess', 
-                             formula = 'y - x') + theme_minimal() +
+  geom_point() + geom_smooth(se = FALSE, span = 0.5) + theme_minimal() +
   labs(x = "Section", y = "Topic Proportion", fill = "Topic", 
        title = "Gamma Topic Distribution Across Frankenstein With Walton's 
        Topics Highlighted") +
@@ -269,8 +298,7 @@ frankenstein_pov <- gamma_with_narrator |>
             fill = 'pink', inherit.aes = FALSE) +
   geom_rect(xmin = 21, xmax = 28.5, ymin = 0, ymax = 2, alpha = 0.01, 
             fill = 'pink', inherit.aes = FALSE) +
-  geom_point() + geom_smooth(se = FALSE, span = 0.5, method = 'loess', 
-                             formula = 'y - x') + theme_minimal() +
+  geom_point() + geom_smooth(se = FALSE, span = 0.5) + theme_minimal() +
   labs(x = "Section", y = "Topic Proportion", fill = "Topic", 
        title = "Gamma Topic Distribution Across Frankenstein With 
        Frankenstein's Topics Highlighted") +
@@ -283,8 +311,7 @@ creature_pov <- gamma_with_narrator |>
   ggplot(aes(x = document, y = gamma, group = topic, color = topic)) +
   geom_rect(xmin = 14, xmax = 21, ymin = 0, ymax = 2, alpha = 0.01, 
             fill = 'lightgreen', inherit.aes = FALSE) +
-  geom_point() + geom_smooth(se = FALSE, span = 0.5, method = 'loess', 
-                             formula = 'y - x') + theme_minimal() +
+  geom_point() + geom_smooth(se = FALSE, span = 0.5) + theme_minimal() +
   labs(x = "Section", y = "Topic Proportion", fill = "Topic", 
        title = "Gamma Topic Distribution Across Frankenstein With The 
        Creature's Topics Highlighted") +
@@ -306,8 +333,16 @@ If we look at the "Parts of Speech" Tab, we can see an interesting distribution 
 Additionally, looking at sentence structure, there does not seem to be any distinguishing features that set the different narrator sections apart. The longest sentence is told by Victor Frankenstein and contain 159 words.
 
 ## Conclusion
-Overall, the LDA topic modeling provided insights into the narrative structure within *Frankenstein* and was able to identify several elements of the framing device employed throughout the text. We were semi-successful in seeing how the topics correlated with certain narrator sections.
+
+### Discussion
+
+Overall, the LDA topic modeling provided insights into the narrative structure within *Frankenstein* and was able to identify several elements of the framing device employed throughout the text. We were successful in visualizing how the topics correlated with certain narrator sections.
 Although the model was not perfect as there were numerous topics with words dispersed across the entire book, refining the parameters could enhance its precision and effectiveness in distinguishing distinct narrative elements.
+
+### Future Work
+
+Although we were able to find out so much about Frankensetein and the narrative voice, there are so many other areas to explore within this novel. You can use the `Frankenstein` package which contains the tokenized text as well as an annotated version to further explore the novel and gain new exciting insights!
+
 
 \newpage
 

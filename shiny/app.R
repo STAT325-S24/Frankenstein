@@ -93,6 +93,16 @@ extract_sentence_info <- function(df) {
       num_nouns <- num_verbs <- num_proper_nouns <- num_adjectives <- num_adverbs <- 0
     }
   }
+  
+  sentence_data <- sentence_data |>
+    mutate(dominant_pos = case_when(
+      num_nouns >= num_verbs & num_nouns >= num_adjectives & num_nouns >= num_adverbs ~ "Nouns",
+      num_verbs >= num_nouns & num_verbs >= num_adjectives & num_verbs >= num_adverbs ~ "Verbs",
+      num_adjectives >= num_nouns & num_adjectives >= num_verbs & num_adjectives >= num_adverbs ~ "Adjectives",
+      num_adverbs >= num_nouns & num_adverbs >= num_verbs & num_adverbs >= num_adjectives ~ "Adverbs",
+      TRUE ~ "Tie"
+    ))
+  
   return(sentence_data)
 }
 
@@ -147,7 +157,19 @@ ui <- navbarPage("Style",
                         length and composition. Look at the frequency of 
                         different parts of speech in each sentence, the 
                         narrative voice, and the total word count to better 
-                        understand the sentence structure."),
+                        understand the sentence structure. You can also explore
+                        the the part of speech that appears the most in each 
+                        sentence."),
+                      br(),
+                      
+                      h4("Resources"),
+                      p("For this Shiny app, cleanNLP was an essential package
+                        that was used to create the annotated version of the 
+                        text. To see the Gutenberg version of Frankenstein,
+                        use the link below:"),
+                      a("Gutenberg version of Frankenstein", 
+                        href="https://www.gutenberg.org/ebooks/84",
+                        target="_blank"),
                       br(),
                       
                       h4("About Me"),
@@ -234,20 +256,23 @@ server <- function(input, output) {
       sentence_info |>
         mutate(row_num = row_number())
     } else {
-      sentence_info %>%
+      sentence_info |>
         filter(section_number == as.numeric(input$selected_section)) |>
         mutate(row_num = row_number())
     }
+    
   })
   
   
   # Plotly graph
   output$sentencePlot <- renderPlotly({
     plot_ly(filtered_data(), x = ~row_num, y = ~num_words, type = 'scatter', 
-            mode = 'markers', hoverinfo = 'x+y', text = ~sentence, 
+            mode = 'markers', hoverinfo = 'x+y', text = ~sentence,
+            color = ~dominant_pos,
             source = 'sentencePlot') |>
       layout(xaxis = list(title = 'Sentence Number'), 
-             yaxis = list(title = 'Number of Words'))
+             yaxis = list(title = 'Number of Words'),
+             legend = list(title = list(text = 'Dominant Part of Speech')))
   })
   
   # Display sentence details when a point is clicked
