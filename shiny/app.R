@@ -96,10 +96,11 @@ extract_sentence_info <- function(df) {
   
   sentence_data <- sentence_data |>
     mutate(dominant_pos = case_when(
-      num_nouns >= num_verbs & num_nouns >= num_adjectives & num_nouns >= num_adverbs ~ "Nouns",
-      num_verbs >= num_nouns & num_verbs >= num_adjectives & num_verbs >= num_adverbs ~ "Verbs",
-      num_adjectives >= num_nouns & num_adjectives >= num_verbs & num_adjectives >= num_adverbs ~ "Adjectives",
-      num_adverbs >= num_nouns & num_adverbs >= num_verbs & num_adverbs >= num_adjectives ~ "Adverbs",
+      num_nouns >= num_verbs & num_nouns >= num_adjectives & num_nouns >= num_adverbs & num_nouns > num_proper_nouns~ "Nouns",
+      num_verbs >= num_nouns & num_verbs >= num_adjectives & num_verbs >= num_adverbs & num_verbs > num_proper_nouns ~ "Verbs",
+      num_adjectives >= num_nouns & num_adjectives >= num_verbs & num_adjectives >= num_adverbs & num_adjectives > num_proper_nouns ~ "Adjectives",
+      num_adverbs >= num_nouns & num_adverbs >= num_verbs & num_adverbs >= num_adjectives & num_adverbs > num_proper_nouns ~ "Adverbs",
+      num_proper_nouns > num_nouns & num_proper_nouns > num_verbs & num_proper_nouns > num_adjectives & num_proper_nouns > num_adverbs ~ "Proper Nouns",
       TRUE ~ "Tie"
     ))
   
@@ -122,6 +123,8 @@ pos_by_chap <- sentence_info |>
     .groups = 'drop') |> 
   pivot_longer(cols = 3:7, names_to = "upos", values_to = "count") |>
   mutate(prop = count/total_words)
+
+
 
 # ui
 ui <- navbarPage("Style", 
